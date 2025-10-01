@@ -41,14 +41,14 @@ jobs:
       # Schritt 4: Flutter-Abhängigkeiten installieren
       - name: Install dependencies
         run: flutter pub get
-        working-directory: ./habitstacker
+        working-directory: habitstacker
 
       # Schritt 5: Die Android APK erstellen
       # Der Befehl `flutter build apk` kompiliert die App.
       # Das Flag `--release` sorgt für eine optimierte Release-Version.
       - name: Build APK
         run: flutter build apk --release
-        working-directory: ./habitstacker
+        working-directory: habitstacker
 
       # Schritt 6: Die erstellte APK als Artefakt hochladen
       # Dadurch kannst du die Datei nach dem erfolgreichen Build herunterladen.
