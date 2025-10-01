@@ -10,6 +10,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     on<HabitsStarted>(_onHabitsStarted);
     on<HabitCompletionToggled>(_onHabitCompletionToggled);
     on<HabitDeleted>(_onHabitDeleted);
+    on<_HabitsUpdated>(_onHabitsUpdated);
   }
 
   final DatabaseService databaseService;
@@ -22,6 +23,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
   }
 
   void _onHabitsStarted(HabitsStarted event, Emitter<HabitState> emit) {
+    emit(HabitsLoadInProgress());
     _habitsSubscription?.cancel();
     _habitsSubscription = databaseService.watchAllHabits().listen(
           (habits) => add(_HabitsUpdated(habits)),
@@ -59,6 +61,10 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
   void _onHabitDeleted(HabitDeleted event, Emitter<HabitState> emit) {
     databaseService.deleteHabit(event.habitId);
   }
+
+  void _onHabitsUpdated(_HabitsUpdated event, Emitter<HabitState> emit) {
+    emit(HabitsLoadSuccess(event.habits));
+  }
 }
 
 // Private event to push updated habits into the BLoC
@@ -66,36 +72,7 @@ class _HabitsUpdated extends HabitEvent {
   const _HabitsUpdated(this.habits);
 
   final List<Habit> habits;
-}
 
-// Extend the BLoC to handle the private event
-extension on HabitBloc {
-  void _onHabitsUpdated(_HabitsUpdated event, Emitter<HabitState> emit) {
-    emit(HabitsLoadSuccess(event.habits));
-  }
-}
-
-// Add a copyWith method to Habit to make updates easier
-extension HabitCopyWith on Habit {
-  Habit copyWith({
-    int? id,
-    String? name,
-    String? reward,
-    String? identityNoun,
-    DateTime? creationDate,
-    List<DateTime>? completionDates,
-    String? stackingOrder,
-    DailyRoutine? dailyRoutine,
-  }) {
-    return Habit(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      reward: reward ?? this.reward,
-      identityNoun: identityNoun ?? this.identityNoun,
-      creationDate: creationDate ?? this.creationDate,
-      completionDates: completionDates ?? this.completionDates,
-      stackingOrder: stackingOrder ?? this.stackingOrder,
-      dailyRoutine: dailyRoutine ?? this.dailyRoutine,
-    );
-  }
+  @override
+  List<Object> get props => [habits];
 }
