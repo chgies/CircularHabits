@@ -1,0 +1,57 @@
+# Name des Workflows, der in der GitHub Actions-Oberfläche angezeigt wird
+name: Build Flutter APK
+
+# Auslöser: Wann soll dieser Workflow ausgeführt werden?
+on:
+  # Bei jedem "push" auf den "main"-Branch
+  push:
+    branches:
+      - main
+  # Ermöglicht das manuelle Starten des Workflows über die GitHub-Oberfläche
+  workflow_dispatch:
+
+# Definition der auszuführenden Jobs
+jobs:
+  build:
+    # Der Typ des virtuellen Rechners, auf dem der Job laufen soll
+    runs-on: ubuntu-latest
+
+    # Die einzelnen Schritte des Jobs
+    steps:
+      # Schritt 1: Code aus dem Repository auschecken
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Schritt 2: Java Development Kit (JDK) einrichten, wird für Android-Builds benötigt
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      # Schritt 3: Flutter SDK einrichten
+      # Diese Action lädt eine bestimmte Flutter-Version herunter und richtet sie ein.
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          # flutter-version: '3.22.0' # Du kannst hier deine gewünschte Flutter-Version angeben
+          channel: 'stable'
+          cache: true # Aktiviert das Caching, um zukünftige Builds zu beschleunigen
+
+      # Schritt 4: Flutter-Abhängigkeiten installieren
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Schritt 5: Die Android APK erstellen
+      # Der Befehl `flutter build apk` kompiliert die App.
+      # Das Flag `--release` sorgt für eine optimierte Release-Version.
+      - name: Build APK
+        run: flutter build apk --release
+
+      # Schritt 6: Die erstellte APK als Artefakt hochladen
+      # Dadurch kannst du die Datei nach dem erfolgreichen Build herunterladen.
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: circularHabits-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
