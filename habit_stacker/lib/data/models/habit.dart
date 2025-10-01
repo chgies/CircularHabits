@@ -31,4 +31,26 @@ class Habit {
         lastCompletion.month == today.month &&
         lastCompletion.day == today.day;
   }
+
+  Habit copyWith({
+    int? id,
+    String? name,
+    String? reward,
+    String? identityNoun,
+    DateTime? creationDate,
+    List<DateTime>? completionDates,
+    String? stackingOrder,
+    DailyRoutine? dailyRoutine,
+  }) {
+    return Habit(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      reward: reward ?? this.reward,
+      identityNoun: identityNoun ?? this.identityNoun,
+      creationDate: creationDate ?? this.creationDate,
+      completionDates: completionDates ?? this.completionDates,
+      stackingOrder: stackingOrder ?? this.stackingOrder,
+      dailyRoutine: dailyRoutine ?? this.dailyRoutine,
+    );
+  }
 }
