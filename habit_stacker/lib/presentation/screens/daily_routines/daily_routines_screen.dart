@@ -34,16 +34,64 @@ class DailyRoutinesScreen extends StatelessWidget {
   }
 
   void _showAddRoutineDialog(BuildContext context) {
+    final List<String> routineSuggestions = [
+      'Morning Coffee',
+      'Brushing Teeth',
+      'Taking a Shower',
+      'Breakfast',
+      'Lunch',
+      'Dinner',
+      'Evening Walk',
+      'Going to Bed',
+      'Waking Up',
+      'Commute to Work',
+      'Workout Session',
+      'Meditation',
+    ];
+
     final TextEditingController controller = TextEditingController();
+    
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Add New Routine'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(hintText: "Routine name"),
-            autofocus: true,
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Choose from suggestions or enter your own:',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 200,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: routineSuggestions.length,
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        title: Text(routineSuggestions[index]),
+                        onTap: () {
+                          context.read<RoutineCubit>().addRoutine(routineSuggestions[index]);
+                          Navigator.of(dialogContext).pop();
+                        },
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  decoration: const InputDecoration(
+                    hintText: "Or enter custom routine name",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: <Widget>[
             TextButton(
@@ -51,7 +99,7 @@ class DailyRoutinesScreen extends StatelessWidget {
               onPressed: () => Navigator.of(dialogContext).pop(),
             ),
             TextButton(
-              child: const Text('Add'),
+              child: const Text('Add Custom'),
               onPressed: () {
                 if (controller.text.isNotEmpty) {
                   context.read<RoutineCubit>().addRoutine(controller.text);

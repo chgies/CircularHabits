@@ -61,13 +61,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
 
       try {
         await databaseService.saveHabit(updatedHabit);
-
-        final List<Habit> updatedHabits = List.from(currentState.habits);
-        final index = updatedHabits.indexWhere((h) => h.id == updatedHabit.id);
-        if (index != -1) {
-          updatedHabits[index] = updatedHabit;
-          emit(HabitsLoadSuccess(updatedHabits));
-        }
+        // The stream subscription will emit the updated state automatically
       } catch (_) {
         // Optionally handle error state
       }
@@ -80,10 +74,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     if (currentState is HabitsLoadSuccess) {
       try {
         await databaseService.deleteHabit(event.habitId);
-        final updatedHabits = currentState.habits
-            .where((habit) => habit.id != event.habitId)
-            .toList();
-        emit(HabitsLoadSuccess(updatedHabits));
+        // The stream subscription will emit the updated state automatically
       } catch (_) {
         // Optionally handle error state
       }
