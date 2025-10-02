@@ -171,7 +171,7 @@ class _HabitPageViewState extends State<HabitPageView> {
                     ],
                   ),
                 ),
-              ),
+              );
             },
           ),
         ),
