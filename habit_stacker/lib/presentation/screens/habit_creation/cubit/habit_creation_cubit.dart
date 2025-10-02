@@ -28,6 +28,7 @@ class HabitCreationCubit extends Cubit<HabitCreationState> {
         isEditing: true,
         creationDate: habit.first.creationDate,
         completionDates: habit.first.completionDates,
+        imagePath: habit.first.imagePath,
       ));
     }
   }
@@ -72,6 +73,10 @@ class HabitCreationCubit extends Cubit<HabitCreationState> {
     emit(state.copyWith(selectedRoutine: routine));
   }
 
+  void imagePathChanged(String? imagePath) {
+    emit(state.copyWith(imagePath: imagePath));
+  }
+
   void saveHabit() {
     final habit = Habit(
       id: state.id ?? DateTime.now().millisecondsSinceEpoch,
@@ -82,6 +87,7 @@ class HabitCreationCubit extends Cubit<HabitCreationState> {
       completionDates: state.completionDates,
       stackingOrder: state.stackingOrder,
       dailyRoutine: state.selectedRoutine,
+      imagePath: state.imagePath,
     );
     databaseService.saveHabit(habit);
   }

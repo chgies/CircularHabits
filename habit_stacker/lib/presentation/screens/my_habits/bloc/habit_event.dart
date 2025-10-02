@@ -27,3 +27,13 @@ class HabitDeleted extends HabitEvent {
   @override
   List<Object> get props => [habitId];
 }
+
+class HabitImageUpdated extends HabitEvent {
+  const HabitImageUpdated(this.habit, this.imagePath);
+
+  final Habit habit;
+  final String? imagePath;
+
+  @override
+  List<Object> get props => [habit, imagePath ?? ''];
+}

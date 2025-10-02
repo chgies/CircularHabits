@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/di_container.dart' as di;
 import '../../../core/services/database_service.dart';
+import '../../widgets/habit_photo_picker.dart';
 import 'bloc/habit_bloc.dart';
 import 'bloc/habit_event.dart';
 import 'bloc/habit_state.dart';
@@ -141,6 +142,17 @@ class _HabitPageViewState extends State<HabitPageView> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      const SizedBox(height: 16),
+                      HabitPhotoPicker(
+                        key: Key('habitPhotoPicker_${habit.id}'),
+                        imagePath: habit.imagePath,
+                        onImageSelected: (imagePath) {
+                          context.read<HabitBloc>().add(
+                            HabitImageUpdated(habit, imagePath),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
                       if (habit.dailyRoutine != null) ...[
                         Text(
                           '${habit.stackingOrder} in ${habit.dailyRoutine!.name}',

@@ -14,6 +14,7 @@ class HabitCreationState extends Equatable {
     this.isEditing = false,
     this.creationDate,
     this.completionDates = const [],
+    this.imagePath,
   });
 
   final int? id;
@@ -27,6 +28,7 @@ class HabitCreationState extends Equatable {
   final bool isEditing;
   final DateTime? creationDate;
   final List<DateTime> completionDates;
+  final String? imagePath;
 
   HabitCreationState copyWith({
     int? id,
@@ -40,6 +42,7 @@ class HabitCreationState extends Equatable {
     bool? isEditing,
     DateTime? creationDate,
     List<DateTime>? completionDates,
+    String? imagePath,
   }) {
     return HabitCreationState(
       id: id ?? this.id,
@@ -53,6 +56,7 @@ class HabitCreationState extends Equatable {
       isEditing: isEditing ?? this.isEditing,
       creationDate: creationDate ?? this.creationDate,
       completionDates: completionDates ?? this.completionDates,
+      imagePath: imagePath ?? this.imagePath,
     );
   }
 
@@ -69,5 +73,6 @@ class HabitCreationState extends Equatable {
         isEditing,
         creationDate,
         completionDates,
+        imagePath,
       ];
 }
