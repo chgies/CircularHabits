@@ -10,6 +10,7 @@ class Habit {
     this.completionDates = const [],
     required this.stackingOrder,
     this.dailyRoutine,
+    this.imagePath,
   });
 
   final int id;
@@ -20,6 +21,7 @@ class Habit {
   final List<DateTime> completionDates;
   final String stackingOrder; // 'before' or 'after'
   final DailyRoutine? dailyRoutine;
+  final String? imagePath;
 
   bool get isCompletedToday {
     if (completionDates.isEmpty) {
@@ -41,6 +43,7 @@ class Habit {
     List<DateTime>? completionDates,
     String? stackingOrder,
     DailyRoutine? dailyRoutine,
+    String? imagePath,
   }) {
     return Habit(
       id: id ?? this.id,
@@ -51,6 +54,7 @@ class Habit {
       completionDates: completionDates ?? this.completionDates,
       stackingOrder: stackingOrder ?? this.stackingOrder,
       dailyRoutine: dailyRoutine ?? this.dailyRoutine,
+      imagePath: imagePath ?? this.imagePath,
     );
   }
 }

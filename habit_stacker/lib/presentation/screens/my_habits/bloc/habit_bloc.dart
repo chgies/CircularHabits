@@ -10,6 +10,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     on<HabitsStarted>(_onHabitsStarted);
     on<HabitCompletionToggled>(_onHabitCompletionToggled);
     on<HabitDeleted>(_onHabitDeleted);
+    on<HabitImageUpdated>(_onHabitImageUpdated);
     on<_HabitsUpdated>(_onHabitsUpdated);
   }
 
@@ -74,6 +75,20 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     if (currentState is HabitsLoadSuccess) {
       try {
         await databaseService.deleteHabit(event.habitId);
+        // The stream subscription will emit the updated state automatically
+      } catch (_) {
+        // Optionally handle error state
+      }
+    }
+  }
+
+  Future<void> _onHabitImageUpdated(
+      HabitImageUpdated event, Emitter<HabitState> emit) async {
+    final currentState = state;
+    if (currentState is HabitsLoadSuccess) {
+      final updatedHabit = event.habit.copyWith(imagePath: event.imagePath);
+      try {
+        await databaseService.saveHabit(updatedHabit);
         // The stream subscription will emit the updated state automatically
       } catch (_) {
         // Optionally handle error state
