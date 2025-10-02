@@ -14,18 +14,20 @@ class HabitCreationCubit extends Cubit<HabitCreationState> {
   Future<void> loadHabitForEdit(int? habitId) async {
     if (habitId == null) return;
 
-    final habit = await databaseService.getHabit(habitId);
-    if (habit != null) {
+    final habits = await databaseService.watchAllHabits().first;
+    final habit = habits.where((habit) => habit.id == habitId);
+
+    if (habit.isNotEmpty) {
       emit(state.copyWith(
-        id: habit.id,
-        name: habit.name,
-        reward: habit.reward,
-        identityNoun: habit.identityNoun,
-        stackingOrder: habit.stackingOrder,
-        selectedRoutine: habit.dailyRoutine,
+        id: habit.first.id,
+        name: habit.first.name,
+        reward: habit.first.reward,
+        identityNoun: habit.first.identityNoun,
+        stackingOrder: habit.first.stackingOrder,
+        selectedRoutine: habit.first.dailyRoutine,
         isEditing: true,
-        creationDate: habit.creationDate,
-        completionDates: habit.completionDates,
+        creationDate: habit.first.creationDate,
+        completionDates: habit.first.completionDates,
       ));
     }
   }
