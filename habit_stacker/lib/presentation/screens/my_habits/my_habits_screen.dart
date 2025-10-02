@@ -141,30 +141,37 @@ class _HabitPageViewState extends State<HabitPageView> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                    if (habit.dailyRoutine != null) ...[
-                      Text(
-                        '${habit.stackingOrder} in ${habit.dailyRoutine!.name}',
-                        style: Theme.of(context).textTheme.titleMedium,
+                      if (habit.dailyRoutine != null) ...[
+                        Text(
+                          '${habit.stackingOrder} in ${habit.dailyRoutine!.name}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      Text(habit.name,
+                          style: Theme.of(context).textTheme.headlineMedium),
+                      const SizedBox(height: 16),
+                      Text('Reward: ${habit.reward}'),
+                      const SizedBox(height: 32),
+                      ElevatedButton(
+                        key: Key('completeHabitButton_${habit.id}'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              habit.isCompletedToday ? Colors.green : null,
+                        ),
+                        onPressed: () {
+                          context
+                              .read<HabitBloc>()
+                              .add(HabitCompletionToggled(habit));
+                        },
+                        child: Text(habit.isCompletedToday
+                            ? 'Completed!'
+                            : 'Complete Habit'),
                       ),
-                      const SizedBox(height: 8),
                     ],
-                    Text(habit.name, style: Theme.of(context).textTheme.headlineMedium),
-                    const SizedBox(height: 16),
-                    Text('Reward: ${habit.reward}'),
-                    const SizedBox(height: 32),
-                    ElevatedButton(
-                      key: Key('completeHabitButton_${habit.id}'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: habit.isCompletedToday ? Colors.green : null,
-                      ),
-                      onPressed: () {
-                        context.read<HabitBloc>().add(HabitCompletionToggled(habit));
-                      },
-                      child: Text(habit.isCompletedToday ? 'Completed!' : 'Complete Habit'),
-                    ),
-                  ],
+                  ),
                 ),
-              );
+              ),
             },
           ),
         ),
