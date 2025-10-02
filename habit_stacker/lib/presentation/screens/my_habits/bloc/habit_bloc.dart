@@ -59,6 +59,12 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
       final updatedHabit =
           habit.copyWith(completionDates: updatedCompletionDates);
 
+      // Emit optimistic update immediately for instant UI feedback
+      final updatedHabits = currentState.habits.map((h) {
+        return h.id == updatedHabit.id ? updatedHabit : h;
+      }).toList();
+      emit(HabitsLoadSuccess(updatedHabits));
+
       try {
         await databaseService.saveHabit(updatedHabit);
         // The stream subscription will emit the updated state automatically
@@ -72,6 +78,10 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
       HabitDeleted event, Emitter<HabitState> emit) async {
     final currentState = state;
     if (currentState is HabitsLoadSuccess) {
+      // Emit optimistic update immediately for instant UI feedback
+      final updatedHabits = currentState.habits.where((h) => h.id != event.habitId).toList();
+      emit(HabitsLoadSuccess(updatedHabits));
+      
       try {
         await databaseService.deleteHabit(event.habitId);
         // The stream subscription will emit the updated state automatically

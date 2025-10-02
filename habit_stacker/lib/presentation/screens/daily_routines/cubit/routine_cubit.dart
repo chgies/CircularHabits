@@ -29,6 +29,10 @@ class RoutineCubit extends Cubit<RoutineState> {
         order: routines.length,
       );
       final updatedRoutines = List<DailyRoutine>.from(routines)..add(newRoutine);
+      
+      // Emit optimistic update immediately for instant UI feedback
+      emit(RoutinesLoadSuccess(updatedRoutines));
+      
       databaseService.saveAllRoutines(updatedRoutines);
     }
   }
@@ -42,6 +46,10 @@ class RoutineCubit extends Cubit<RoutineState> {
         // This is a simplified re-ordering. A real implementation might need more robust logic.
         // updatedRoutines[i] = updatedRoutines[i].copyWith(order: i);
       }
+      
+      // Emit optimistic update immediately for instant UI feedback
+      emit(RoutinesLoadSuccess(updatedRoutines));
+      
       databaseService.saveAllRoutines(updatedRoutines);
     }
   }
@@ -63,6 +71,10 @@ class RoutineCubit extends Cubit<RoutineState> {
         // updatedRoutines.add(routine.copyWith(order: i));
         updatedRoutines.add(DailyRoutine(id: routine.id, name: routine.name, order: i));
       }
+      
+      // Emit optimistic update immediately for instant UI feedback
+      emit(RoutinesLoadSuccess(updatedRoutines));
+      
       databaseService.saveAllRoutines(updatedRoutines);
     }
   }
