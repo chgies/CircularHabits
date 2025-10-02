@@ -143,7 +143,7 @@ class _HabitPageViewState extends State<HabitPageView> {
                     children: [
                     if (habit.dailyRoutine != null) ...[
                       Text(
-                        '${habit.stackingOrder} ${habit.dailyRoutine!.name}, i',
+                        '${habit.stackingOrder} in ${habit.dailyRoutine!.name}',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
