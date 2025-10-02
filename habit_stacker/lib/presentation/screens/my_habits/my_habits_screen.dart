@@ -132,11 +132,22 @@ class _HabitPageViewState extends State<HabitPageView> {
             itemCount: habits.length,
             itemBuilder: (context, index) {
               final habit = habits[index];
-              return Card(
-                margin: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+              return InkWell(
+                onLongPress: () {
+                  context.push('/edit-habit/${habit.id}');
+                },
+                child: Card(
+                  margin: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                    if (habit.dailyRoutine != null) ...[
+                      Text(
+                        '${habit.stackingOrder} ${habit.dailyRoutine!.name}, i',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     Text(habit.name, style: Theme.of(context).textTheme.headlineMedium),
                     const SizedBox(height: 16),
                     Text('Reward: ${habit.reward}'),

@@ -17,6 +17,13 @@ class AppRouter {
         builder: (context, state) => const HabitCreationScreen(),
       ),
       GoRoute(
+        path: '/edit-habit/:id',
+        builder: (context, state) {
+          final habitId = int.parse(state.pathParameters['id']!);
+          return HabitCreationScreen(habitId: habitId);
+        },
+      ),
+      GoRoute(
         path: '/routines',
         builder: (context, state) => const DailyRoutinesScreen(),
       ),

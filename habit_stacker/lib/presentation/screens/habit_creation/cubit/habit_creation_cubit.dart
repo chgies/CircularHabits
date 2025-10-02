@@ -11,8 +11,26 @@ class HabitCreationCubit extends Cubit<HabitCreationState> {
 
   final DatabaseService databaseService;
 
+  Future<void> loadHabitForEdit(int? habitId) async {
+    if (habitId == null) return;
+
+    final habit = await databaseService.getHabit(habitId);
+    if (habit != null) {
+      emit(state.copyWith(
+        id: habit.id,
+        name: habit.name,
+        reward: habit.reward,
+        identityNoun: habit.identityNoun,
+        stackingOrder: habit.stackingOrder,
+        selectedRoutine: habit.dailyRoutine,
+        isEditing: true,
+        creationDate: habit.creationDate,
+        completionDates: habit.completionDates,
+      ));
+    }
+  }
+
   void _loadRoutines() {
-    // In a real app, you might want to handle the subscription differently
     databaseService.watchAllRoutines().first.then((routines) {
       emit(state.copyWith(routines: routines));
     });
@@ -53,15 +71,16 @@ class HabitCreationCubit extends Cubit<HabitCreationState> {
   }
 
   void saveHabit() {
-    final newHabit = Habit(
-      id: DateTime.now().millisecondsSinceEpoch, // Using timestamp for a unique ID in mock
+    final habit = Habit(
+      id: state.id ?? DateTime.now().millisecondsSinceEpoch,
       name: state.name,
       reward: state.reward,
       identityNoun: state.identityNoun,
-      creationDate: DateTime.now(),
+      creationDate: state.creationDate ?? DateTime.now(),
+      completionDates: state.completionDates,
       stackingOrder: state.stackingOrder,
       dailyRoutine: state.selectedRoutine,
     );
-    databaseService.saveHabit(newHabit);
+    databaseService.saveHabit(habit);
   }
 }

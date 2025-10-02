@@ -31,35 +31,63 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
         );
   }
 
-  void _onHabitCompletionToggled(
+  Future<void> _onHabitCompletionToggled(
     HabitCompletionToggled event,
     Emitter<HabitState> emit,
-  ) {
-    final habit = event.habit;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  ) async {
+    final currentState = state;
+    if (currentState is HabitsLoadSuccess) {
+      final habit = event.habit;
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
 
-    List<DateTime> updatedCompletionDates;
+      List<DateTime> updatedCompletionDates;
 
-    if (habit.isCompletedToday) {
-      // Remove today's completion
-      updatedCompletionDates = habit.completionDates
-          .where((date) =>
-              date.year != today.year ||
-              date.month != today.month ||
-              date.day != today.day)
-          .toList();
-    } else {
-      // Add today's completion
-      updatedCompletionDates = List.from(habit.completionDates)..add(today);
+      if (habit.isCompletedToday) {
+        // Remove today's completion
+        updatedCompletionDates = habit.completionDates
+            .where((date) =>
+                date.year != today.year ||
+                date.month != today.month ||
+                date.day != today.day)
+            .toList();
+      } else {
+        // Add today's completion
+        updatedCompletionDates = List.from(habit.completionDates)..add(today);
+      }
+
+      final updatedHabit =
+          habit.copyWith(completionDates: updatedCompletionDates);
+
+      try {
+        await databaseService.saveHabit(updatedHabit);
+
+        final List<Habit> updatedHabits = List.from(currentState.habits);
+        final index = updatedHabits.indexWhere((h) => h.id == updatedHabit.id);
+        if (index != -1) {
+          updatedHabits[index] = updatedHabit;
+          emit(HabitsLoadSuccess(updatedHabits));
+        }
+      } catch (_) {
+        // Optionally handle error state
+      }
     }
-
-    final updatedHabit = habit.copyWith(completionDates: updatedCompletionDates);
-    databaseService.saveHabit(updatedHabit);
   }
 
-  void _onHabitDeleted(HabitDeleted event, Emitter<HabitState> emit) {
-    databaseService.deleteHabit(event.habitId);
+  Future<void> _onHabitDeleted(
+      HabitDeleted event, Emitter<HabitState> emit) async {
+    final currentState = state;
+    if (currentState is HabitsLoadSuccess) {
+      try {
+        await databaseService.deleteHabit(event.habitId);
+        final updatedHabits = currentState.habits
+            .where((habit) => habit.id != event.habitId)
+            .toList();
+        emit(HabitsLoadSuccess(updatedHabits));
+      } catch (_) {
+        // Optionally handle error state
+      }
+    }
   }
 
   void _onHabitsUpdated(_HabitsUpdated event, Emitter<HabitState> emit) {
