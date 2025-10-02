@@ -8,16 +8,18 @@ import 'cubit/habit_creation_cubit.dart';
 import 'cubit/habit_creation_state.dart';
 
 class HabitCreationScreen extends StatelessWidget {
-  const HabitCreationScreen({super.key});
+  const HabitCreationScreen({super.key, this.habitId});
+  final int? habitId;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          HabitCreationCubit(databaseService: di.sl<DatabaseService>()),
+          HabitCreationCubit(databaseService: di.sl<DatabaseService>())
+            ..loadHabitForEdit(habitId),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Define Your Habit'),
+          title: Text(habitId == null ? 'Define Your Habit' : 'Edit Habit'),
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: () => context.pop(),
