@@ -97,10 +97,14 @@ class _HabitPageViewState extends State<HabitPageView> {
   void initState() {
     super.initState();
     _pageController.addListener(() {
-      if (_pageController.page?.round() != _currentPage) {
-        setState(() {
-          _currentPage = _pageController.page!.round();
-        });
+      final page = _pageController.page;
+      if (page != null) {
+        final roundedPage = page.round();
+        if (roundedPage != _currentPage) {
+          setState(() {
+            _currentPage = roundedPage;
+          });
+        }
       }
     });
   }
@@ -118,18 +122,6 @@ class _HabitPageViewState extends State<HabitPageView> {
     final nextPage = (_currentPage + 1) % habits.length;
     _pageController.animateToPage(
       nextPage,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
-
-  void _navigateToPreviousHabit() {
-    final habits = widget.state.habits;
-    if (habits.isEmpty) return;
-    
-    final previousPage = (_currentPage - 1 + habits.length) % habits.length;
-    _pageController.animateToPage(
-      previousPage,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -173,15 +165,33 @@ class _HabitPageViewState extends State<HabitPageView> {
             ),
           ),
         Expanded(
-          child: GestureDetector(
-            onVerticalDragEnd: (details) {
-              if (details.primaryVelocity! > 0) {
-                // Swiped down - go to previous habit
-                _navigateToPreviousHabit();
-              } else if (details.primaryVelocity! < 0) {
-                // Swiped up - go to next habit
-                _navigateToNextHabit();
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              // Handle circular scroll at boundaries
+              if (notification is ScrollEndNotification) {
+                final metrics = notification.metrics;
+                final habits = widget.state.habits;
+                
+                // If at the last page and scrolling down, jump to first
+                if (_currentPage == habits.length - 1 && 
+                    metrics.pixels >= metrics.maxScrollExtent) {
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    if (mounted) {
+                      _pageController.jumpToPage(0);
+                    }
+                  });
+                }
+                // If at the first page and scrolling up, jump to last
+                else if (_currentPage == 0 && 
+                         metrics.pixels <= metrics.minScrollExtent) {
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    if (mounted) {
+                      _pageController.jumpToPage(habits.length - 1);
+                    }
+                  });
+                }
               }
+              return false;
             },
             child: PageView.builder(
               controller: _pageController,
