@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/di_container.dart' as di;
 import '../../../core/services/database_service.dart';
+import '../../../data/models/habit.dart';
 import '../../widgets/habit_photo_picker.dart';
 import 'bloc/habit_bloc.dart';
 import 'bloc/habit_event.dart';
@@ -20,6 +21,14 @@ class MyHabitsScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('My Habits'),
           actions: [
+            IconButton(
+              key: const Key('habitsListButton'),
+              icon: const Icon(Icons.list),
+              tooltip: 'Habits List',
+              onPressed: () {
+                _showHabitsList(context);
+              },
+            ),
             IconButton(
               key: const Key('routinesButton'),
               icon: const Icon(Icons.list_alt),
@@ -58,6 +67,18 @@ class MyHabitsScreen extends StatelessWidget {
       ),
     );
   }
+
+  void _showHabitsList(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return BlocProvider.value(
+          value: context.read<HabitBloc>(),
+          child: const HabitsListDialog(),
+        );
+      },
+    );
+  }
 }
 
 class HabitPageView extends StatefulWidget {
@@ -88,6 +109,30 @@ class _HabitPageViewState extends State<HabitPageView> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _navigateToNextHabit() {
+    final habits = widget.state.habits;
+    if (habits.isEmpty) return;
+    
+    final nextPage = (_currentPage + 1) % habits.length;
+    _pageController.animateToPage(
+      nextPage,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _navigateToPreviousHabit() {
+    final habits = widget.state.habits;
+    if (habits.isEmpty) return;
+    
+    final previousPage = (_currentPage - 1 + habits.length) % habits.length;
+    _pageController.animateToPage(
+      previousPage,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
@@ -128,66 +173,249 @@ class _HabitPageViewState extends State<HabitPageView> {
             ),
           ),
         Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: habits.length,
-            itemBuilder: (context, index) {
-              final habit = habits[index];
-              return InkWell(
-                onLongPress: () {
-                  context.push('/edit-habit/${habit.id}');
-                },
-                child: Card(
-                  margin: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 16),
-                      HabitPhotoPicker(
-                        key: Key('habitPhotoPicker_${habit.id}'),
-                        imagePath: habit.imagePath,
-                        onImageSelected: (imagePath) {
-                          context.read<HabitBloc>().add(
-                            HabitImageUpdated(habit, imagePath),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      if (habit.dailyRoutine != null) ...[
-                        Text(
-                          '${habit.stackingOrder} in ${habit.dailyRoutine!.name}',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      Text(habit.name,
-                          style: Theme.of(context).textTheme.headlineMedium),
-                      const SizedBox(height: 16),
-                      Text('Reward: ${habit.reward}'),
-                      const SizedBox(height: 32),
-                      ElevatedButton(
-                        key: Key('completeHabitButton_${habit.id}'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              habit.isCompletedToday ? Colors.green : null,
-                        ),
-                        onPressed: () {
-                          context
-                              .read<HabitBloc>()
-                              .add(HabitCompletionToggled(habit));
-                        },
-                        child: Text(habit.isCompletedToday
-                            ? 'Completed!'
-                            : 'Complete Habit'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+          child: GestureDetector(
+            onVerticalDragEnd: (details) {
+              if (details.primaryVelocity! > 0) {
+                // Swiped down - go to previous habit
+                _navigateToPreviousHabit();
+              } else if (details.primaryVelocity! < 0) {
+                // Swiped up - go to next habit
+                _navigateToNextHabit();
+              }
             },
+            child: PageView.builder(
+              controller: _pageController,
+              scrollDirection: Axis.vertical,
+              itemCount: habits.length,
+              itemBuilder: (context, index) {
+                final habit = habits[index];
+                return SwipeableHabitCard(
+                  habit: habit,
+                  onComplete: () {
+                    context.read<HabitBloc>().add(HabitCompletionToggled(habit));
+                    _navigateToNextHabit();
+                  },
+                  onEdit: () {
+                    context.push('/edit-habit/${habit.id}');
+                  },
+                );
+              },
+            ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class SwipeableHabitCard extends StatefulWidget {
+  const SwipeableHabitCard({
+    super.key,
+    required this.habit,
+    required this.onComplete,
+    required this.onEdit,
+  });
+
+  final Habit habit;
+  final VoidCallback onComplete;
+  final VoidCallback onEdit;
+
+  @override
+  State<SwipeableHabitCard> createState() => _SwipeableHabitCardState();
+}
+
+class _SwipeableHabitCardState extends State<SwipeableHabitCard> {
+  double _dragExtent = 0;
+  bool _isDragging = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final threshold = MediaQuery.of(context).size.width / 3;
+    final progress = (_dragExtent.abs() / threshold).clamp(0.0, 1.0);
+    
+    return GestureDetector(
+      onHorizontalDragStart: (details) {
+        setState(() {
+          _isDragging = true;
+        });
+      },
+      onHorizontalDragUpdate: (details) {
+        setState(() {
+          _dragExtent += details.primaryDelta!;
+        });
+      },
+      onHorizontalDragEnd: (details) {
+        if (_dragExtent.abs() >= threshold) {
+          if (_dragExtent > 0) {
+            // Swiped right - complete habit
+            widget.onComplete();
+          } else {
+            // Swiped left - edit habit
+            widget.onEdit();
+          }
+        }
+        setState(() {
+          _dragExtent = 0;
+          _isDragging = false;
+        });
+      },
+      child: Stack(
+        children: [
+          // Background with color and icon
+          if (_isDragging && _dragExtent != 0)
+            Positioned.fill(
+              child: Container(
+                color: _dragExtent > 0
+                    ? Colors.green.withOpacity(progress)
+                    : Colors.yellow.withOpacity(progress),
+                child: Align(
+                  alignment: _dragExtent > 0
+                      ? Alignment.centerLeft
+                      : Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Icon(
+                      _dragExtent > 0 ? Icons.check : Icons.settings,
+                      color: Colors.white.withOpacity(progress),
+                      size: 48 * progress,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // Main habit card
+          Transform.translate(
+            offset: Offset(_dragExtent, 0),
+            child: _buildHabitCard(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHabitCard(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 16),
+          HabitPhotoPicker(
+            key: Key('habitPhotoPicker_${widget.habit.id}'),
+            imagePath: widget.habit.imagePath,
+            onImageSelected: (imagePath) {
+              context.read<HabitBloc>().add(
+                HabitImageUpdated(widget.habit, imagePath),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          if (widget.habit.dailyRoutine != null) ...[
+            Text(
+              '${widget.habit.stackingOrder} in ${widget.habit.dailyRoutine!.name}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+          ],
+          Text(widget.habit.name,
+              style: Theme.of(context).textTheme.headlineMedium),
+          const SizedBox(height: 16),
+          Text('Reward: ${widget.habit.reward}'),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            key: Key('completeHabitButton_${widget.habit.id}'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor:
+                  widget.habit.isCompletedToday ? Colors.green : null,
+            ),
+            onPressed: () {
+              context
+                  .read<HabitBloc>()
+                  .add(HabitCompletionToggled(widget.habit));
+            },
+            child: Text(widget.habit.isCompletedToday
+                ? 'Completed!'
+                : 'Complete Habit'),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Swipe right to complete • Swipe left to edit • Swipe up/down to navigate',
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class HabitsListDialog extends StatelessWidget {
+  const HabitsListDialog({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: BlocBuilder<HabitBloc, HabitState>(
+        builder: (context, state) {
+          if (state is HabitsLoadSuccess) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppBar(
+                  title: const Text('My Habits'),
+                  automaticallyImplyLeading: false,
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: state.habits.length,
+                    itemBuilder: (context, index) {
+                      final habit = state.habits[index];
+                      return ListTile(
+                        leading: IconButton(
+                          key: Key('toggleHabitButton_${habit.id}'),
+                          icon: Icon(
+                            habit.isCompletedToday
+                                ? Icons.check_box
+                                : Icons.check_box_outline_blank,
+                            color: habit.isCompletedToday
+                                ? Colors.green
+                                : Colors.grey,
+                          ),
+                          onPressed: () {
+                            context
+                                .read<HabitBloc>()
+                                .add(HabitCompletionToggled(habit));
+                          },
+                        ),
+                        title: Text(
+                          habit.name,
+                          style: TextStyle(
+                            color: habit.isCompletedToday
+                                ? Colors.green
+                                : Colors.black,
+                            fontWeight: habit.isCompletedToday
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                        subtitle: Text(habit.reward),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          }
+          return const Center(child: CircularProgressIndicator());
+        },
+      ),
     );
   }
 }
