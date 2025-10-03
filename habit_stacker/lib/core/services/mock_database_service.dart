@@ -14,20 +14,20 @@ class MockDatabaseService implements DatabaseService {
         reward: 'A piece of chocolate',
         creationDate: DateTime.now().subtract(const Duration(days: 5)),
         stackingOrder: 'after',
-        dailyRoutine: _routines.first,
+        dailyRoutineId: _routines.first.id,
         completionDates: [
           DateTime.now().subtract(const Duration(days: 1)),
           DateTime.now().subtract(const Duration(days: 3)),
         ]
-      ),
+      )..dailyRoutine = _routines.first,
       Habit(
         id: 2,
         name: 'Do 10 push-ups',
         reward: 'Watch an episode of a show',
         creationDate: DateTime.now().subtract(const Duration(days: 10)),
         stackingOrder: 'before',
-        dailyRoutine: _routines.last,
-      ),
+        dailyRoutineId: _routines.last.id,
+      )..dailyRoutine = _routines.last,
     ];
 
     _habits.addAll(initialHabits);

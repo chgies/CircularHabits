@@ -86,9 +86,9 @@ class HabitCreationCubit extends Cubit<HabitCreationState> {
       creationDate: state.creationDate ?? DateTime.now(),
       completionDates: state.completionDates,
       stackingOrder: state.stackingOrder,
-      dailyRoutine: state.selectedRoutine,
+      dailyRoutineId: state.selectedRoutine?.id,
       imagePath: state.imagePath,
-    );
+    )..dailyRoutine = state.selectedRoutine;
     databaseService.saveHabit(habit);
   }
 }

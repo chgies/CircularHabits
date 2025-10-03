@@ -1,27 +1,34 @@
+import 'package:isar_community/isar.dart';
 import 'daily_routine.dart';
 
+part 'habit.g.dart';
+
+@collection
 class Habit {
   Habit({
-    required this.id,
+    this.id = Isar.autoIncrement,
     required this.name,
     required this.reward,
     this.identityNoun,
     required this.creationDate,
     this.completionDates = const [],
     required this.stackingOrder,
-    this.dailyRoutine,
+    this.dailyRoutineId,
     this.imagePath,
   });
 
-  final int id;
-  final String name;
-  final String reward;
-  final String? identityNoun;
-  final DateTime creationDate;
-  final List<DateTime> completionDates;
-  final String stackingOrder; // 'before' or 'after'
-  final DailyRoutine? dailyRoutine;
-  final String? imagePath;
+  Id id;
+  late String name;
+  late String reward;
+  String? identityNoun;
+  late DateTime creationDate;
+  List<DateTime> completionDates;
+  late String stackingOrder; // 'before' or 'after'
+  int? dailyRoutineId;
+  String? imagePath;
+
+  @ignore
+  DailyRoutine? dailyRoutine;
 
   bool get isCompletedToday {
     if (completionDates.isEmpty) {
@@ -42,6 +49,7 @@ class Habit {
     DateTime? creationDate,
     List<DateTime>? completionDates,
     String? stackingOrder,
+    int? dailyRoutineId,
     DailyRoutine? dailyRoutine,
     String? imagePath,
   }) {
@@ -53,8 +61,8 @@ class Habit {
       creationDate: creationDate ?? this.creationDate,
       completionDates: completionDates ?? this.completionDates,
       stackingOrder: stackingOrder ?? this.stackingOrder,
-      dailyRoutine: dailyRoutine ?? this.dailyRoutine,
+      dailyRoutineId: dailyRoutineId ?? this.dailyRoutineId,
       imagePath: imagePath ?? this.imagePath,
-    );
+    )..dailyRoutine = dailyRoutine ?? this.dailyRoutine;
   }
 }

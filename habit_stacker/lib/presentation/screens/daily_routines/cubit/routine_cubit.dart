@@ -43,8 +43,7 @@ class RoutineCubit extends Cubit<RoutineState> {
       final updatedRoutines = routines.where((r) => r.id != routineId).toList();
       // Re-order the remaining routines
       for (var i = 0; i < updatedRoutines.length; i++) {
-        // This is a simplified re-ordering. A real implementation might need more robust logic.
-        // updatedRoutines[i] = updatedRoutines[i].copyWith(order: i);
+        updatedRoutines[i] = updatedRoutines[i].copyWith(order: i);
       }
       
       // Emit optimistic update immediately for instant UI feedback
@@ -67,9 +66,7 @@ class RoutineCubit extends Cubit<RoutineState> {
       final List<DailyRoutine> updatedRoutines = [];
       for (var i = 0; i < routines.length; i++) {
         final routine = routines[i];
-        // This is a simplified re-ordering. A real implementation might need more robust logic.
-        // updatedRoutines.add(routine.copyWith(order: i));
-        updatedRoutines.add(DailyRoutine(id: routine.id, name: routine.name, order: i));
+        updatedRoutines.add(routine.copyWith(order: i));
       }
       
       // Emit optimistic update immediately for instant UI feedback

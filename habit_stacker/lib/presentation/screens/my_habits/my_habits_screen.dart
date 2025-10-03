@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/di_container.dart' as di;
-import '../../../core/services/database_service.dart';
 import '../../../data/models/habit.dart';
 import '../../widgets/habit_photo_picker.dart';
 import 'bloc/habit_bloc.dart';
@@ -14,56 +12,52 @@ class MyHabitsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => HabitBloc(databaseService: di.sl<DatabaseService>())
-        ..add(HabitsStarted()),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('My Habits'),
-          actions: [
-            IconButton(
-              key: const Key('habitsListButton'),
-              icon: const Icon(Icons.list),
-              tooltip: 'Habits List',
-              onPressed: () {
-                _showHabitsList(context);
-              },
-            ),
-            IconButton(
-              key: const Key('routinesButton'),
-              icon: const Icon(Icons.list_alt),
-              tooltip: 'Daily Routines',
-              onPressed: () => context.push('/routines'),
-            ),
-            IconButton(
-              key: const Key('statsButton'),
-              icon: const Icon(Icons.bar_chart),
-              tooltip: 'Statistics',
-              onPressed: () => context.push('/stats'),
-            ),
-            IconButton(
-              key: const Key('addHabitButton'),
-              icon: const Icon(Icons.add),
-              tooltip: 'Add Habit',
-              onPressed: () => context.push('/create-habit'),
-            ),
-          ],
-        ),
-        body: BlocBuilder<HabitBloc, HabitState>(
-          builder: (context, state) {
-            if (state is HabitsLoadInProgress) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (state is HabitsLoadSuccess) {
-              if (state.habits.isEmpty) {
-                return const Center(child: Text('Add a habit to get started!'));
-              }
-              return HabitPageView(state: state);
-            } else if (state is HabitsLoadFailure) {
-              return const Center(child: Text('Failed to load habits.'));
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Habits'),
+        actions: [
+          IconButton(
+            key: const Key('habitsListButton'),
+            icon: const Icon(Icons.list),
+            tooltip: 'Habits List',
+            onPressed: () {
+              _showHabitsList(context);
+            },
+          ),
+          IconButton(
+            key: const Key('routinesButton'),
+            icon: const Icon(Icons.list_alt),
+            tooltip: 'Daily Routines',
+            onPressed: () => context.push('/routines'),
+          ),
+          IconButton(
+            key: const Key('statsButton'),
+            icon: const Icon(Icons.bar_chart),
+            tooltip: 'Statistics',
+            onPressed: () => context.push('/stats'),
+          ),
+          IconButton(
+            key: const Key('addHabitButton'),
+            icon: const Icon(Icons.add),
+            tooltip: 'Add Habit',
+            onPressed: () => context.push('/create-habit'),
+          ),
+        ],
+      ),
+      body: BlocBuilder<HabitBloc, HabitState>(
+        builder: (context, state) {
+          if (state is HabitsLoadInProgress) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is HabitsLoadSuccess) {
+            if (state.habits.isEmpty) {
+              return const Center(child: Text('Add a habit to get started!'));
             }
-            return const SizedBox.shrink();
-          },
-        ),
+            return HabitPageView(state: state);
+          } else if (state is HabitsLoadFailure) {
+            return const Center(child: Text('Failed to load habits.'));
+          }
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
@@ -93,6 +87,7 @@ class _HabitPageViewState extends State<HabitPageView> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   bool _isJumping = false; // Flag to prevent re-entrant jumps
+  bool _isNavigating = false; // Flag to prevent multiple navigation triggers
 
   @override
   void initState() {
@@ -135,14 +130,24 @@ class _HabitPageViewState extends State<HabitPageView> {
 
   void _navigateToNextHabit() {
     final habits = widget.state.habits;
-    if (habits.isEmpty) return;
+    if (habits.isEmpty || _isNavigating) return;
     
+    _isNavigating = true;
     final nextPage = (_currentPage + 1) % habits.length;
     _pageController.animateToPage(
       nextPage,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-    );
+    ).then((_) {
+      // Reset flag after animation completes
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          setState(() {
+            _isNavigating = false;
+          });
+        }
+      });
+    });
   }
 
   @override
@@ -157,12 +162,14 @@ class _HabitPageViewState extends State<HabitPageView> {
               key: Key('deleteHabitButton_${habits[_currentPage].id}'),
               icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
               onPressed: () {
+                final bloc = context.read<HabitBloc>();
+                final habitToDelete = habits[_currentPage];
                 showDialog(
                   context: context,
                   builder: (BuildContext dialogContext) {
                     return AlertDialog(
                       title: const Text('Delete Habit'),
-                      content: Text('Are you sure you want to delete "${habits[_currentPage].name}"?'),
+                      content: Text('Are you sure you want to delete "${habitToDelete.name}"?'),
                       actions: <Widget>[
                         TextButton(
                           child: const Text('Cancel'),
@@ -171,7 +178,7 @@ class _HabitPageViewState extends State<HabitPageView> {
                         TextButton(
                           child: const Text('Delete'),
                           onPressed: () {
-                            context.read<HabitBloc>().add(HabitDeleted(habits[_currentPage].id));
+                            bloc.add(HabitDeleted(habitToDelete.id));
                             Navigator.of(dialogContext).pop();
                           },
                         ),
@@ -266,6 +273,7 @@ class SwipeableHabitCard extends StatefulWidget {
 class _SwipeableHabitCardState extends State<SwipeableHabitCard> {
   double _dragExtent = 0;
   bool _isDragging = false;
+  bool _hasTriggeredAction = false; // Prevent multiple triggers
 
   @override
   Widget build(BuildContext context) {
@@ -276,6 +284,7 @@ class _SwipeableHabitCardState extends State<SwipeableHabitCard> {
       onHorizontalDragStart: (details) {
         setState(() {
           _isDragging = true;
+          _hasTriggeredAction = false; // Reset on new drag
         });
       },
       onHorizontalDragUpdate: (details) {
@@ -284,7 +293,9 @@ class _SwipeableHabitCardState extends State<SwipeableHabitCard> {
         });
       },
       onHorizontalDragEnd: (details) {
-        if (_dragExtent.abs() >= threshold) {
+        // Only trigger action once per swipe
+        if (!_hasTriggeredAction && _dragExtent.abs() >= threshold) {
+          _hasTriggeredAction = true;
           if (_dragExtent > 0) {
             // Swiped right - complete habit
             widget.onComplete();
@@ -342,6 +353,8 @@ class _SwipeableHabitCardState extends State<SwipeableHabitCard> {
           HabitPhotoPicker(
             key: Key('habitPhotoPicker_${widget.habit.id}'),
             imagePath: widget.habit.imagePath,
+            isCompletedToday: widget.habit.isCompletedToday,
+            animationScale: 1.5, // Animation at 150% size
             onImageSelected: (imagePath) {
               context.read<HabitBloc>().add(
                 HabitImageUpdated(widget.habit, imagePath),
