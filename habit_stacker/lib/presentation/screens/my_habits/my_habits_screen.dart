@@ -92,6 +92,7 @@ class HabitPageView extends StatefulWidget {
 class _HabitPageViewState extends State<HabitPageView> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool _isJumping = false; // Flag to prevent re-entrant jumps
 
   @override
   void initState() {
@@ -107,6 +108,23 @@ class _HabitPageViewState extends State<HabitPageView> {
         }
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(HabitPageView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // When habits list changes (e.g., deletion), ensure current page is within bounds
+    final habitsLength = widget.state.habits.length;
+    if (habitsLength > 0 && _currentPage >= habitsLength) {
+      // Jump to the last valid page without triggering animations
+      final newPage = habitsLength - 1;
+      _currentPage = newPage;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pageController.hasClients) {
+          _pageController.jumpToPage(newPage);
+        }
+      });
+    }
   }
 
   @override
@@ -168,25 +186,36 @@ class _HabitPageViewState extends State<HabitPageView> {
           child: NotificationListener<ScrollNotification>(
             onNotification: (notification) {
               // Handle circular scroll at boundaries
-              if (notification is ScrollEndNotification) {
+              if (notification is ScrollEndNotification && !_isJumping) {
                 final metrics = notification.metrics;
                 final habits = widget.state.habits;
+                
+                // Only handle circular scroll if we have more than one habit
+                if (habits.length <= 1) return false;
                 
                 // If at the last page and scrolling down, jump to first
                 if (_currentPage == habits.length - 1 && 
                     metrics.pixels >= metrics.maxScrollExtent) {
+                  _isJumping = true;
                   Future.delayed(const Duration(milliseconds: 100), () {
                     if (mounted) {
                       _pageController.jumpToPage(0);
+                      Future.delayed(const Duration(milliseconds: 50), () {
+                        _isJumping = false;
+                      });
                     }
                   });
                 }
                 // If at the first page and scrolling up, jump to last
                 else if (_currentPage == 0 && 
                          metrics.pixels <= metrics.minScrollExtent) {
+                  _isJumping = true;
                   Future.delayed(const Duration(milliseconds: 100), () {
                     if (mounted) {
                       _pageController.jumpToPage(habits.length - 1);
+                      Future.delayed(const Duration(milliseconds: 50), () {
+                        _isJumping = false;
+                      });
                     }
                   });
                 }
